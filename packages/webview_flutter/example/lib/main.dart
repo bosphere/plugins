@@ -7,6 +7,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -216,10 +217,9 @@ class SampleMenu extends StatelessWidget {
 
   void _onListCookies(
       WebViewController controller, BuildContext context) async {
-    final String cookies =
-        await controller.evaluateJavascript('document.cookie');
-    // ignore: deprecated_member_use
-    Scaffold.of(context).showSnackBar(SnackBar(
+    final String? cookies =
+      await controller.getAllCookies();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
@@ -273,7 +273,7 @@ class SampleMenu extends StatelessWidget {
     await controller.loadUrl('data:text/html;base64,$contentBase64');
   }
 
-  Widget _getCookieList(String cookies) {
+  Widget _getCookieList(String? cookies) {
     if (cookies == null || cookies == '""') {
       return Container();
     }

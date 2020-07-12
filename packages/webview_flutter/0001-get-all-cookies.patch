@@ -1,0 +1,345 @@
+From 1d0e793192ad6ebae60c64710650d7aecc6e88c5 Mon Sep 17 00:00:00 2001
+From: bosphere <boss.army@gmail.com>
+Date: Sun, 12 Jul 2020 16:55:51 +0800
+Subject: [PATCH] get all cookies
+
+---
+ .../webviewflutter/FlutterWebView.java        |  10 ++
+ .../webview_flutter/example/lib/main.dart     |  10 +-
+ .../webview_flutter/get_all_cookies.patch     | 168 ++++++++++++++++++
+ .../ios/Classes/FlutterWebView.m              |  19 ++
+ .../lib/platform_interface.dart               |   5 +
+ .../lib/src/webview_method_channel.dart       |   3 +
+ .../webview_flutter/lib/webview_flutter.dart  |   4 +
+ 7 files changed, 214 insertions(+), 5 deletions(-)
+ create mode 100644 packages/webview_flutter/get_all_cookies.patch
+
+diff --git a/packages/webview_flutter/android/src/main/java/io/flutter/plugins/webviewflutter/FlutterWebView.java b/packages/webview_flutter/android/src/main/java/io/flutter/plugins/webviewflutter/FlutterWebView.java
+index 022f1c35..c60bbf01 100644
+--- a/packages/webview_flutter/android/src/main/java/io/flutter/plugins/webviewflutter/FlutterWebView.java
++++ b/packages/webview_flutter/android/src/main/java/io/flutter/plugins/webviewflutter/FlutterWebView.java
+@@ -11,6 +11,7 @@ import android.os.Build;
+ import android.os.Handler;
+ import android.os.Message;
+ import android.view.View;
++import android.webkit.CookieManager;
+ import android.webkit.WebChromeClient;
+ import android.webkit.WebResourceRequest;
+ import android.webkit.WebStorage;
+@@ -226,6 +227,9 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
+       case "clearCache":
+         clearCache(result);
+         break;
++      case "getAllCookies":
++        getAllCookies(result);
++        break;
+       case "getTitle":
+         getTitle(result);
+         break;
+@@ -333,6 +337,12 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
+     result.success(null);
+   }
+ 
++  private void getAllCookies(Result result) {
++    String url = webView.getUrl();
++    String cookiesStr = CookieManager.getInstance().getCookie(url);
++    result.success(cookiesStr);
++  }
++
+   private void getTitle(Result result) {
+     result.success(webView.getTitle());
+   }
+diff --git a/packages/webview_flutter/example/lib/main.dart b/packages/webview_flutter/example/lib/main.dart
+index e7e79811..fcbaeefd 100644
+--- a/packages/webview_flutter/example/lib/main.dart
++++ b/packages/webview_flutter/example/lib/main.dart
+@@ -7,6 +7,7 @@
+ import 'dart:async';
+ import 'dart:convert';
+ import 'dart:io';
++
+ import 'package:flutter/material.dart';
+ import 'package:webview_flutter/webview_flutter.dart';
+ 
+@@ -216,10 +217,9 @@ class SampleMenu extends StatelessWidget {
+ 
+   void _onListCookies(
+       WebViewController controller, BuildContext context) async {
+-    final String cookies =
+-        await controller.evaluateJavascript('document.cookie');
+-    // ignore: deprecated_member_use
+-    Scaffold.of(context).showSnackBar(SnackBar(
++    final String? cookies =
++      await controller.getAllCookies();
++    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+       content: Column(
+         mainAxisAlignment: MainAxisAlignment.end,
+         mainAxisSize: MainAxisSize.min,
+@@ -273,7 +273,7 @@ class SampleMenu extends StatelessWidget {
+     await controller.loadUrl('data:text/html;base64,$contentBase64');
+   }
+ 
+-  Widget _getCookieList(String cookies) {
++  Widget _getCookieList(String? cookies) {
+     if (cookies == null || cookies == '""') {
+       return Container();
+     }
+diff --git a/packages/webview_flutter/get_all_cookies.patch b/packages/webview_flutter/get_all_cookies.patch
+new file mode 100644
+index 00000000..b8a8705a
+--- /dev/null
++++ b/packages/webview_flutter/get_all_cookies.patch
+@@ -0,0 +1,168 @@
++Index: packages/webview_flutter/android/src/main/java/io/flutter/plugins/webviewflutter/FlutterWebView.java
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++--- packages/webview_flutter/android/src/main/java/io/flutter/plugins/webviewflutter/FlutterWebView.java	(revision 999e11bc5cfe4689270fc5592d4a05e01a473e5c)
+++++ packages/webview_flutter/android/src/main/java/io/flutter/plugins/webviewflutter/FlutterWebView.java	(revision 088c46ae375c92e956f581cbd4cba8e1485336a2)
++@@ -10,6 +10,7 @@
++ import android.os.Build;
++ import android.os.Handler;
++ import android.view.View;
+++import android.webkit.CookieManager;
++ import android.webkit.WebStorage;
++ import android.webkit.WebViewClient;
++ import io.flutter.plugin.common.BinaryMessenger;
++@@ -155,6 +156,9 @@
++       case "clearCache":
++         clearCache(result);
++         break;
+++      case "getAllCookies":
+++        getAllCookies(result);
+++        break;
++       case "getTitle":
++         getTitle(result);
++         break;
++@@ -262,6 +266,12 @@
++     result.success(null);
++   }
++ 
+++  private void getAllCookies(Result result) {
+++    String url = webView.getUrl();
+++    String cookiesStr = CookieManager.getInstance().getCookie(url);
+++    result.success(cookiesStr);
+++  }
+++
++   private void getTitle(Result result) {
++     result.success(webView.getTitle());
++   }
++Index: packages/webview_flutter/example/ios/Runner.xcodeproj/project.pbxproj
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++--- packages/webview_flutter/example/ios/Runner.xcodeproj/project.pbxproj	(revision 999e11bc5cfe4689270fc5592d4a05e01a473e5c)
+++++ packages/webview_flutter/example/ios/Runner.xcodeproj/project.pbxproj	(revision 088c46ae375c92e956f581cbd4cba8e1485336a2)
++@@ -298,12 +298,9 @@
++ 			files = (
++ 			);
++ 			inputPaths = (
++-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh",
++-				"${PODS_ROOT}/../Flutter/Flutter.framework",
++ 			);
++ 			name = "[CP] Embed Pods Frameworks";
++ 			outputPaths = (
++-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Flutter.framework",
++ 			);
++ 			runOnlyForDeploymentPostprocessing = 0;
++ 			shellPath = /bin/sh;
++Index: packages/webview_flutter/example/lib/main.dart
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++--- packages/webview_flutter/example/lib/main.dart	(revision 999e11bc5cfe4689270fc5592d4a05e01a473e5c)
+++++ packages/webview_flutter/example/lib/main.dart	(revision 088c46ae375c92e956f581cbd4cba8e1485336a2)
++@@ -207,7 +207,7 @@
++   void _onListCookies(
++       WebViewController controller, BuildContext context) async {
++     final String cookies =
++-        await controller.evaluateJavascript('document.cookie');
+++      await controller.getAllCookies();
++     Scaffold.of(context).showSnackBar(SnackBar(
++       content: Column(
++         mainAxisAlignment: MainAxisAlignment.end,
++Index: packages/webview_flutter/ios/Classes/FlutterWebView.m
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++--- packages/webview_flutter/ios/Classes/FlutterWebView.m	(revision 999e11bc5cfe4689270fc5592d4a05e01a473e5c)
+++++ packages/webview_flutter/ios/Classes/FlutterWebView.m	(revision 088c46ae375c92e956f581cbd4cba8e1485336a2)
++@@ -148,6 +148,8 @@
++     [self onRemoveJavaScriptChannels:call result:result];
++   } else if ([[call method] isEqualToString:@"clearCache"]) {
++     [self clearCache:result];
+++  } else if ([[call method] isEqualToString:@"getAllCookies"]) {
+++    [self getAllCookies:result];
++   } else if ([[call method] isEqualToString:@"getTitle"]) {
++     [self onGetTitle:result];
++   } else if ([[call method] isEqualToString:@"scrollTo"]) {
++@@ -278,6 +280,23 @@
++   }
++ }
++ 
+++- (void)getAllCookies:(FlutterResult)result {
+++  if (@available(iOS 11.0, *)) {
+++    NSString *url = [_webView.URL absoluteURL];
+++    WKHTTPCookieStore *cookieStore = _webView.configuration.websiteDataStore.httpCookieStore;
+++    [cookieStore getAllCookies:^(NSArray<NSHTTPCookie *> * _Nonnull cookies) {
+++      NSString *allCookies = @"";
+++      NSEnumerator *cookie_enum = [cookies objectEnumerator];
+++      NSHTTPCookie *temp_cookie;
+++      while (temp_cookie = [cookie_enum nextObject]) {
+++        NSString *temp = [NSString stringWithFormat:@"%@=%@;",[temp_cookie name],[temp_cookie value]];
+++        allCookies = [allCookies stringByAppendingString:temp];
+++      }
+++      result([NSString stringWithFormat:@"%@", allCookies]);
+++    }];
+++  }
+++}
+++
++ - (void)onGetTitle:(FlutterResult)result {
++   NSString* title = _webView.title;
++   result(title);
++Index: packages/webview_flutter/lib/platform_interface.dart
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++--- packages/webview_flutter/lib/platform_interface.dart	(revision 999e11bc5cfe4689270fc5592d4a05e01a473e5c)
+++++ packages/webview_flutter/lib/platform_interface.dart	(revision 088c46ae375c92e956f581cbd4cba8e1485336a2)
++@@ -279,6 +279,11 @@
++     throw UnimplementedError(
++         "WebView removeJavascriptChannels is not implemented on the current platform");
++   }
+++  
+++  Future<String> getAllCookies() {
+++      throw UnimplementedError(
+++          "WebView getAllCookies is not implemented on the current platform");
+++  }
++ 
++   /// Returns the title of the currently loaded page.
++   Future<String> getTitle() {
++Index: packages/webview_flutter/lib/src/webview_method_channel.dart
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++--- packages/webview_flutter/lib/src/webview_method_channel.dart	(revision 999e11bc5cfe4689270fc5592d4a05e01a473e5c)
+++++ packages/webview_flutter/lib/src/webview_method_channel.dart	(revision 088c46ae375c92e956f581cbd4cba8e1485336a2)
++@@ -128,6 +128,9 @@
++         'removeJavascriptChannels', javascriptChannelNames.toList());
++   }
++ 
+++  @override
+++  Future<String> getAllCookies() => _channel.invokeMethod<String>('getAllCookies');
+++
++   @override
++   Future<String> getTitle() => _channel.invokeMethod<String>("getTitle");
++ 
++Index: packages/webview_flutter/lib/webview_flutter.dart
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++--- packages/webview_flutter/lib/webview_flutter.dart	(revision 999e11bc5cfe4689270fc5592d4a05e01a473e5c)
+++++ packages/webview_flutter/lib/webview_flutter.dart	(revision 088c46ae375c92e956f581cbd4cba8e1485336a2)
++@@ -672,6 +672,10 @@
++     return _webViewPlatformController.evaluateJavascript(javascriptString);
++   }
++ 
+++  Future<String> getAllCookies() {
+++    return _webViewPlatformController.getAllCookies();
+++  }
+++
++   /// Returns the title of the currently loaded page.
++   Future<String> getTitle() {
++     return _webViewPlatformController.getTitle();
+diff --git a/packages/webview_flutter/ios/Classes/FlutterWebView.m b/packages/webview_flutter/ios/Classes/FlutterWebView.m
+index 5f2af3b8..95f317e0 100644
+--- a/packages/webview_flutter/ios/Classes/FlutterWebView.m
++++ b/packages/webview_flutter/ios/Classes/FlutterWebView.m
+@@ -156,6 +156,8 @@ - (void)onMethodCall:(FlutterMethodCall*)call result:(FlutterResult)result {
+     [self onRemoveJavaScriptChannels:call result:result];
+   } else if ([[call method] isEqualToString:@"clearCache"]) {
+     [self clearCache:result];
++  } else if ([[call method] isEqualToString:@"getAllCookies"]) {
++    [self getAllCookies:result];
+   } else if ([[call method] isEqualToString:@"getTitle"]) {
+     [self onGetTitle:result];
+   } else if ([[call method] isEqualToString:@"scrollTo"]) {
+@@ -286,6 +288,23 @@ - (void)clearCache:(FlutterResult)result {
+   }
+ }
+ 
++- (void)getAllCookies:(FlutterResult)result {
++  if (@available(iOS 11.0, *)) {
++    NSString *url = [_webView.URL absoluteURL];
++    WKHTTPCookieStore *cookieStore = _webView.configuration.websiteDataStore.httpCookieStore;
++    [cookieStore getAllCookies:^(NSArray<NSHTTPCookie *> * _Nonnull cookies) {
++      NSString *allCookies = @"";
++      NSEnumerator *cookie_enum = [cookies objectEnumerator];
++      NSHTTPCookie *temp_cookie;
++      while (temp_cookie = [cookie_enum nextObject]) {
++        NSString *temp = [NSString stringWithFormat:@"%@=%@;",[temp_cookie name],[temp_cookie value]];
++        allCookies = [allCookies stringByAppendingString:temp];
++      }
++      result([NSString stringWithFormat:@"%@", allCookies]);
++    }];
++  }
++}
++
+ - (void)onGetTitle:(FlutterResult)result {
+   NSString* title = _webView.title;
+   result(title);
+diff --git a/packages/webview_flutter/lib/platform_interface.dart b/packages/webview_flutter/lib/platform_interface.dart
+index 16b529d7..19db4c5c 100644
+--- a/packages/webview_flutter/lib/platform_interface.dart
++++ b/packages/webview_flutter/lib/platform_interface.dart
+@@ -284,6 +284,11 @@ abstract class WebViewPlatformController {
+     throw UnimplementedError(
+         "WebView removeJavascriptChannels is not implemented on the current platform");
+   }
++  
++  Future<String?> getAllCookies() {
++      throw UnimplementedError(
++          "WebView getAllCookies is not implemented on the current platform");
++  }
+ 
+   /// Returns the title of the currently loaded page.
+   Future<String?> getTitle() {
+diff --git a/packages/webview_flutter/lib/src/webview_method_channel.dart b/packages/webview_flutter/lib/src/webview_method_channel.dart
+index e26604f7..21277aca 100644
+--- a/packages/webview_flutter/lib/src/webview_method_channel.dart
++++ b/packages/webview_flutter/lib/src/webview_method_channel.dart
+@@ -134,6 +134,9 @@ class MethodChannelWebViewPlatform implements WebViewPlatformController {
+         'removeJavascriptChannels', javascriptChannelNames.toList());
+   }
+ 
++  @override
++  Future<String?> getAllCookies() => _channel.invokeMethod<String>('getAllCookies');
++
+   @override
+   Future<String?> getTitle() => _channel.invokeMethod<String>("getTitle");
+ 
+diff --git a/packages/webview_flutter/lib/webview_flutter.dart b/packages/webview_flutter/lib/webview_flutter.dart
+index 56315b66..fc2ad2d1 100644
+--- a/packages/webview_flutter/lib/webview_flutter.dart
++++ b/packages/webview_flutter/lib/webview_flutter.dart
+@@ -769,6 +769,10 @@ class WebViewController {
+     return _webViewPlatformController.evaluateJavascript(javascriptString);
+   }
+ 
++  Future<String?> getAllCookies() {
++    return _webViewPlatformController.getAllCookies();
++  }
++
+   /// Returns the title of the currently loaded page.
+   Future<String?> getTitle() {
+     return _webViewPlatformController.getTitle();
+-- 
+2.24.3 (Apple Git-128)
+
