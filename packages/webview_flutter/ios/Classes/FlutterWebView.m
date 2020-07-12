@@ -148,6 +148,8 @@
     [self onRemoveJavaScriptChannels:call result:result];
   } else if ([[call method] isEqualToString:@"clearCache"]) {
     [self clearCache:result];
+  } else if ([[call method] isEqualToString:@"getAllCookies"]) {
+    [self getAllCookies:result];
   } else if ([[call method] isEqualToString:@"getTitle"]) {
     [self onGetTitle:result];
   } else if ([[call method] isEqualToString:@"scrollTo"]) {
@@ -275,6 +277,23 @@
   } else {
     // support for iOS8 tracked in https://github.com/flutter/flutter/issues/27624.
     NSLog(@"Clearing cache is not supported for Flutter WebViews prior to iOS 9.");
+  }
+}
+
+- (void)getAllCookies:(FlutterResult)result {
+  if (@available(iOS 11.0, *)) {
+    NSString *url = [_webView.URL absoluteURL];
+    WKHTTPCookieStore *cookieStore = _webView.configuration.websiteDataStore.httpCookieStore;
+    [cookieStore getAllCookies:^(NSArray<NSHTTPCookie *> * _Nonnull cookies) {
+      NSString *allCookies = @"";
+      NSEnumerator *cookie_enum = [cookies objectEnumerator];
+      NSHTTPCookie *temp_cookie;
+      while (temp_cookie = [cookie_enum nextObject]) {
+        NSString *temp = [NSString stringWithFormat:@"%@=%@;",[temp_cookie name],[temp_cookie value]];
+        allCookies = [allCookies stringByAppendingString:temp];
+      }
+      result([NSString stringWithFormat:@"%@", allCookies]);
+    }];
   }
 }
 

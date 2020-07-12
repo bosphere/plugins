@@ -10,6 +10,7 @@ import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.os.Handler;
 import android.view.View;
+import android.webkit.CookieManager;
 import android.webkit.WebStorage;
 import android.webkit.WebViewClient;
 import io.flutter.plugin.common.BinaryMessenger;
@@ -155,6 +156,9 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
       case "clearCache":
         clearCache(result);
         break;
+      case "getAllCookies":
+        getAllCookies(result);
+        break;
       case "getTitle":
         getTitle(result);
         break;
@@ -260,6 +264,12 @@ public class FlutterWebView implements PlatformView, MethodCallHandler {
     webView.clearCache(true);
     WebStorage.getInstance().deleteAllData();
     result.success(null);
+  }
+
+  private void getAllCookies(Result result) {
+    String url = webView.getUrl();
+    String cookiesStr = CookieManager.getInstance().getCookie(url);
+    result.success(cookiesStr);
   }
 
   private void getTitle(Result result) {
