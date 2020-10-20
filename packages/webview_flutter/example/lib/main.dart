@@ -214,7 +214,7 @@ class SampleMenu extends StatelessWidget {
   void _onListCookies(
       WebViewController controller, BuildContext context) async {
     final String cookies =
-        await controller.evaluateJavascript('document.cookie');
+      await controller.getAllCookies();
     Scaffold.of(context).showSnackBar(SnackBar(
       content: Column(
         mainAxisAlignment: MainAxisAlignment.end,

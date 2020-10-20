@@ -280,6 +280,11 @@ abstract class WebViewPlatformController {
         "WebView removeJavascriptChannels is not implemented on the current platform");
   }
 
+  Future<String> getAllCookies() {
+    throw UnimplementedError(
+        "WebView getAllCookies is not implemented on the current platform");
+  }
+
   /// Returns the title of the currently loaded page.
   Future<String> getTitle() {
     throw UnimplementedError(

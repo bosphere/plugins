@@ -733,6 +733,10 @@ class WebViewController {
     return _webViewPlatformController.evaluateJavascript(javascriptString);
   }
 
+  Future<String> getAllCookies() {
+    return _webViewPlatformController.getAllCookies();
+  }
+
   /// Returns the title of the currently loaded page.
   Future<String> getTitle() {
     return _webViewPlatformController.getTitle();
